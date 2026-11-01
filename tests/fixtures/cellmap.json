@@ -1,0 +1,458 @@
+{
+"CELL": {
+"UICINFO": "H6",
+"NAME": "C5",
+"RANK": "H5",
+"EMPL": "J5",
+"UIC": "C6",
+"DUIC": "C9",
+"RTIME": "E9",
+"SMON": "C10",
+"SDAY": "D10",
+"SYR": "E10",
+"START": "C11",
+"DAYS": "E11",
+"END": "C12",
+"FCITY": "H9",
+"FST": "K9",
+"TCITY": "H10",
+"TST": "K10",
+"JOB": "H11",
+"TITLE": "H12",
+"ASSIGN": "C16",
+"AFROM": "H16",
+"TRANS": "C17",
+"SUB": "C18",
+"DPC": "C19",
+"UDL": "C20",
+"PROG": "H20",
+"LOA": "C21",
+"UNIT": "C22",
+"DDESC": "C23",
+"QUAL": "C24",
+"MOVED": "E26",
+"ADDR": "C27",
+"CONT": "C126",
+"PREV": "H126",
+"VAR": "C128",
+"VFC": "C129",
+"VFS": "G129",
+"VMODE": "I129",
+"VTC": "C130",
+"VTS": "G130",
+"CODES": "C123",
+"D1": "E33",
+"D2": "E34",
+"Q1": "E42",
+"Q2": "E43",
+"Q3": "E44",
+"M1": "E48",
+"M2": "E49",
+"M3": "E50",
+"T1": "E55",
+"T2": "E61",
+"E1": "E76",
+"E2": "E77",
+"E3": "E78",
+"E4": "E79",
+"P1": "E88",
+"H1": "E93",
+"A1": "E105",
+"A2": "E106",
+"A3": "E107",
+"F1": "E110",
+"F2": "E111",
+"DN1": "C37",
+"DN2": "H37",
+"DN3": "C38",
+"DN4": "H38",
+"DN5": "C39",
+"DN6": "H39",
+"QS1": "C45",
+"MP1": "C51",
+"MP2": "H51",
+"TN1": "C56",
+"TN2": "H56",
+"TN3": "C57",
+"TN4": "H57",
+"TN5": "C58",
+"TN6": "H58",
+"TD1": "C62",
+"TD2": "H62",
+"TD3": "C63",
+"TD4": "H63",
+"TD5": "C64",
+"TD6": "H64",
+"TM1": "C67",
+"TM2": "H67",
+"TM3": "C68",
+"TM4": "H68",
+"TA1": "C71",
+"TA2": "H71",
+"TA3": "C72",
+"TA4": "H72",
+"TA5": "C73",
+"TA6": "H73",
+"TO1": "C82",
+"TO2": "H82",
+"TO3": "C83",
+"TO4": "H83",
+"TO5": "C84",
+"TO6": "H84",
+"PM1": "C89",
+"PM2": "H89",
+"PM3": "C90",
+"PM4": "H90",
+"HY1": "C94",
+"HY2": "H94",
+"HY3": "C95",
+"HY4": "H95",
+"PV1": "C98",
+"PV2": "H98",
+"PD1": "C99",
+"PD2": "H99",
+"PD3": "C100",
+"PS1": "C101",
+"PS2": "H101",
+"PS3": "C102",
+"PS4": "H102",
+"SP1": "C114",
+"SP2": "H114",
+"SP3": "C115",
+"SP4": "H115",
+"SP5": "C116",
+"SP6": "H116",
+"AD1": "C119",
+"AD2": "H119",
+"AD3": "C120",
+"AD4": "H120",
+"AD5": "C121",
+"AD6": "H121",
+"E_GRADEV": "C157",
+"E_PRIOR": "C158",
+"E_PEBD": "C159",
+"E_YOS": "C160",
+"E_DEPS": "C161",
+"E_DZIP": "C162",
+"E_HZIP": "C163",
+"E_BAHT": "C164",
+"E_PD": "C165",
+"E_LODGP": "C166",
+"E_MEALP": "C167",
+"E_MILES": "C168",
+"E_FICAO": "C169"
+},
+"QCELL": {
+"D1": "E33",
+"D2": "E34",
+"Q1": "E42",
+"Q2": "E43",
+"Q3": "E44",
+"M1": "E48",
+"M2": "E49",
+"M3": "E50",
+"T1": "E55",
+"T2": "E61",
+"E1": "E76",
+"E2": "E77",
+"E3": "E78",
+"E4": "E79",
+"P1": "E88",
+"H1": "E93",
+"A1": "E105",
+"A2": "E106",
+"A3": "E107",
+"F1": "E110",
+"F2": "E111"
+},
+"GCELLS": {
+"DN": [
+"C37",
+"H37",
+"C38",
+"H38",
+"C39",
+"H39"
+],
+"QS": [
+"C45"
+],
+"MP": [
+"C51",
+"H51"
+],
+"TN": [
+"C56",
+"H56",
+"C57",
+"H57",
+"C58",
+"H58"
+],
+"TD": [
+"C62",
+"H62",
+"C63",
+"H63",
+"C64",
+"H64"
+],
+"TM": [
+"C67",
+"H67",
+"C68",
+"H68"
+],
+"TA": [
+"C71",
+"H71",
+"C72",
+"H72",
+"C73",
+"H73"
+],
+"TO": [
+"C82",
+"H82",
+"C83",
+"H83",
+"C84",
+"H84"
+],
+"PM": [
+"C89",
+"H89",
+"C90",
+"H90"
+],
+"HY": [
+"C94",
+"H94",
+"C95",
+"H95"
+],
+"PV": [
+"C98",
+"H98"
+],
+"PD": [
+"C99",
+"H99",
+"C100"
+],
+"PS": [
+"C101",
+"H101",
+"C102",
+"H102"
+],
+"SP": [
+"C114",
+"H114",
+"C115",
+"H115",
+"C116",
+"H116"
+],
+"AD": [
+"C119",
+"H119",
+"C120",
+"H120",
+"C121",
+"H121"
+]
+},
+"CONFLICTS": [
+[
+11,
+12,
+"Duty Location - pick one"
+],
+[
+11,
+13,
+"Duty Location - pick one"
+],
+[
+12,
+13,
+"Duty Location - pick one"
+],
+[
+15,
+16,
+"Government Quarters - pick one"
+],
+[
+15,
+17,
+"Government Quarters - pick one"
+],
+[
+16,
+17,
+"Government Quarters - pick one"
+],
+[
+19,
+21,
+"Government Meals - pick one"
+],
+[
+19,
+22,
+"Government Meals - pick one"
+],
+[
+21,
+22,
+"Government Meals - pick one"
+],
+[
+261,
+262,
+"weekend / holiday variant - pick one"
+],
+[
+261,
+263,
+"weekend / holiday variant - pick one"
+],
+[
+262,
+263,
+"weekend / holiday variant - pick one"
+],
+[
+27,
+68,
+"Method of Travel: POV authorized vs POV NOT authorized"
+],
+[
+272,
+273,
+"Mileage? YES vs NO"
+],
+[
+242,
+315,
+"Is this a PCS move? YES vs NO"
+],
+[
+196,
+43,
+"HHG Authorized? YES vs NO"
+],
+[
+240,
+43,
+"HHG Authorized? YES vs NO"
+],
+[
+248,
+43,
+"HHG Authorized? YES vs NO"
+],
+[
+73,
+43,
+"HHG Authorized? YES vs NO"
+],
+[
+196,
+244,
+"HHG authorized vs no HHG shipment"
+],
+[
+230,
+231,
+"COLA: CONUS vs OCONUS"
+],
+[
+34,
+35,
+"Advance: GTCC vs NOT GTCC holder"
+],
+[
+89,
+264,
+"CBA vs IBA - user-approved"
+],
+[
+89,
+290,
+"CBA vs IBA - user-approved"
+],
+[
+259,
+264,
+"CBA vs IBA - user-approved"
+],
+[
+259,
+290,
+"CBA vs IBA - user-approved"
+],
+[
+13,
+253,
+"13 (DO NOT FILE A TRAVEL VOUCHER) vs voucher / mileage - user-approved"
+],
+[
+13,
+267,
+"13 (DO NOT FILE A TRAVEL VOUCHER) vs voucher / mileage - user-approved"
+],
+[
+13,
+272,
+"13 (DO NOT FILE A TRAVEL VOUCHER) vs voucher / mileage - user-approved"
+],
+[
+291,
+35,
+"291 (Not GTCC/IBA holder) vs GTCC holder / IBA - user-approved"
+],
+[
+291,
+264,
+"291 (Not GTCC/IBA holder) vs GTCC holder / IBA - user-approved"
+],
+[
+291,
+290,
+"291 (Not GTCC/IBA holder) vs GTCC holder / IBA - user-approved"
+],
+[
+244,
+240,
+"244 (no HHG shipment) vs HHG authorized / movement - user-approved"
+],
+[
+244,
+248,
+"244 (no HHG shipment) vs HHG authorized / movement - user-approved"
+],
+[
+315,
+316,
+"315 (Continuation - PCS Not Authorized) vs 316 (Continuation - PCS Authorized) - user-approved"
+],
+[
+120,
+239,
+"120 vs 239 (dependent travel / dependents per JTR / unaccompanied PCS) - user-approved"
+],
+[
+120,
+258,
+"120 vs 258 (dependent travel / dependents per JTR / unaccompanied PCS) - user-approved"
+],
+[
+239,
+258,
+"239 vs 258 (dependent travel / dependents per JTR / unaccompanied PCS) - user-approved"
+]
+]
+}

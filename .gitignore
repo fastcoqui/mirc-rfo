@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.zip
+tests/py_bridge/
+tests/js_values/
+screenshots/*.pdf
+screenshots/
+tools/py_bridge_run_tests.py
+*.log
+.env*
+*.pem
+*.key
+.DS_Store

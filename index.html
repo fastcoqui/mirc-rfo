@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Unofficial planning aid for building a MIRC Request For Orders (RFO). Runs entirely in your browser.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>MIRC RFO Planner (unofficial)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23283618'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23e9c46a' font-family='Arial' font-weight='bold'%3ERFO%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<div id="app">
+  <header class="topbar no-print">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">RFO</div>
+      <div>
+        <div class="title">MIRC RFO Planner</div>
+        <div class="subtitle">Unofficial planning aid · not an official Army / DoD system · nothing leaves this device</div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-view="form" class="active">Form</button>
+      <button role="tab" data-view="cost">Cost estimate</button>
+      <button role="tab" data-view="summary">1-page summary</button>
+      <button role="tab" data-view="help">Help &amp; rules</button>
+      <button role="tab" data-view="feedback">Feedback</button>
+    </nav>
+    <div class="actions">
+      <button id="btnSave" title="Download the filled form as a JSON file you can load later">💾 Save file</button>
+      <label class="btn" title="Load a previously saved RFO JSON file">📂 Open file<input id="fileOpen" type="file" accept=".json,application/json" hidden></label>
+      <button id="btnPrint" title="Print or save as PDF">🖨 Print / PDF</button>
+      <button id="btnClear" class="danger" title="Clear every field (and the saved draft)">✖ Clear form</button>
+    </div>
+  </header>
+  <div class="statusbar no-print" id="statusbar" aria-live="polite">
+    <button id="statusToggle" class="status-chip"><span id="statusText">Loading…</span><span class="chev">▾</span></button>
+    <span id="costChip" class="cost-chip"></span>
+    <label class="draft"><input type="checkbox" id="draftToggle"> Keep a draft on this device</label>
+  </div>
+  <main>
+    <section id="view-form" class="view active" aria-label="RFO form">
+      <div class="layout">
+        <div class="formcol"><div id="formGrid" class="sheet form-sheet"></div>
+          <p class="sheet-note">Signature / approval block prints with the form. Use <b>Print / PDF</b> for the full form, or the 1-page summary tab.</p>
+        </div>
+        <aside class="sidecol" id="sidecol"><button id="drawerClose" class="drawer-close no-print" aria-label="Close status panel">✕ Close</button><div id="statusGrid" class="sheet status-sheet"></div></aside>
+      </div>
+    </section>
+    <section id="view-cost" class="view" aria-label="Cost estimate">
+      <div class="banner warn">ESTIMATE ONLY — not an official entitlement determination. Finance (DFAS / JTR) determines actual entitlements.</div>
+      <div id="costLoading" class="loading">Loading rate tables…</div>
+      <div id="costGrid" class="sheet cost-sheet"></div>
+      <details class="sources"><summary>Rate sources &amp; effective dates</summary><div id="sourcesTable"></div></details>
+    </section>
+    <section id="view-summary" class="view" aria-label="One-page summary">
+      <div class="summary-tools no-print"><button id="btnPrintSummary">🖨 Print / save 1-page PDF</button><span class="hint">Prints on one portrait page.</span></div>
+      <div class="page-wrap"><div id="summaryGrid" class="sheet summary-sheet page"></div></div>
+    </section>
+    <section id="view-help" class="view" aria-label="Help"><div id="helpBody" class="prose"></div></section>
+    <section id="view-feedback" class="view" aria-label="Feedback"><div id="feedbackBody" class="prose"></div></section>
+  </main>
+  <footer class="no-print">Unofficial planning aid built from the MIRC RFO workbook (change set 11). Runs entirely in your browser — no server, no tracking. Verify everything against official guidance.</footer>
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

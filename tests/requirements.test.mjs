@@ -15,7 +15,7 @@ test('Johnson AT example (tree slide 2): READY, 11/11, codes 12 17 21 34 47 229 
   const { e } = runCase('T1c_AT_full_READY_johnson'); const v = view(e);
   assert.ok(ready(v), v.status); assert.ok(v.meter.endsWith('11/11'));
   assert.deepEqual(v.codes, [12, 17, 21, 34, 47, 229, 247, 252, 253, 259, 260]);
-  assert.equal(e.get('C12', 'RFO Form') - e.get('C11', 'RFO Form'), 14);       // 15 days, start counts
+  assert.equal(e.get(cellmap.CELL.END, 'RFO Form') - e.get(cellmap.CELL.START, 'RFO Form'), 14);       // 15 days, start counts
 });
 
 test('PCS example (tree slide 3): codes 231 232 238 239 240 242, READY', () => {
@@ -58,7 +58,7 @@ test('there are exactly 16 user-approved conflict pairs in the workbook data', (
 });
 // scenario that triggers each pair (from the workbook test set; 3 extra CBA/IBA combos built from C1)
 const C1 = fixture('C1_cba_iba_conflict').inputs;
-const cba = (a, b) => ({ ...C1, [F + 'C71']: dispOf(E0, a), [F + 'H71']: dispOf(E0, b) });
+const cba = (a, b) => ({ ...C1, [F + 'C93']: dispOf(E0, a), [F + 'H93']: dispOf(E0, b) });
 const PAIR_CASE = {
   '89+264': () => cba(89, 264), '89+290': 'C1_cba_iba_conflict', '259+264': () => cba(259, 264), '259+290': () => cba(259, 290),
   '13+253': 'K2_13_vs_253_267_other_notes', '13+267': 'K2_13_vs_253_267_other_notes', '13+272': 'K1_13_vs_mileage_272',
@@ -115,6 +115,37 @@ test('cost: missing YOS/DEPENDENTS/DUTY ZIP + bad HOME ZIP turn red; samples hav
 });
 test('cost: ESTIMATE ONLY + sources footnote present on form and summary', () => {
   const { e } = runCase('E1_sample1_E5_bragg_15d');
-  const all = JSON.stringify([...Array(30)].map((_, i) => [e.get('B' + (150 + i), 'RFO Form'), e.get('G' + (150 + i), 'RFO Form')]));
+  const all = JSON.stringify([...Array(24)].map((_, i) => [e.get('B' + (7 + i), 'RFO Form'), e.get('G' + (7 + i), 'RFO Form')]));
   assert.match(all, /ESTIMATE ONLY/); assert.match(all, /RATES AS OF/);
+});
+
+// ---- change set 12: tour length -> PCS / TDY (AR 37-104-4 para 8-4, Fig 8-19) + day limits ----
+const OT = [['B_AT29', 'TDY', 'RC/T'], ['B_ADT30', 'TDY', 'RC/T'], ['B_ADT31', 'TDY', 'HOR'], ['B_ADT139', 'TDY', 'HOR'], ['B_ADT140', 'PCS', 'PDS'],
+  ['B_ADTS139', 'TDY', 'HOR'], ['B_ADTS140', 'PCS', 'PDS'], ['B_ADOS30', 'TDY', 'RC/T'], ['B_ADOS31', 'TDY', 'HOR'], ['B_ADOS180', 'TDY', 'HOR'], ['B_ADOS181', 'PCS', 'PDS'],
+  ['X_ADOS181_waiver_deps', 'PCS', 'HOR'], ['X_ADOS181_waiver_nodeps', 'PCS', 'PDS'], ['X_ADT140_commuting', 'PCS', 'HOR'], ['X_ADT140_multi_location', 'PCS', 'HOR'],
+  ['X_ADT200_amend_rem140', 'TDY → PCS', 'HOR → PDS'], ['X_ADT200_amend_rem139', 'TDY', 'HOR']];
+for (const [n, ot, bt] of OT) {
+  test(`CS12 ${n}: ${ot}, BAH ${bt} (form shows it)`, () => {
+    const { e, est } = runCase(n);
+    assert.equal(est.E_OTYPE, ot); assert.equal(est.E_BAHT, bt);
+    assert.ok(String(e.get('C15', 'RFO Form')).startsWith(ot.split(' ')[0]), String(e.get('C15', 'RFO Form')));
+  });
+}
+test('CS12 PCS: no per diem at the duty location, only 2 travel days each way at the standard CONUS rate', () => {
+  const { est: p } = runCase('B_ADT140'); const { est: t } = runCase('B_ADT139');
+  assert.equal(p.E_LODGT, 0); assert.equal(p.E_MIET, 0);
+  assert.equal(p.E_LODG, 2 * 1 * p.E_SLRATE); assert.equal(p.E_MIE, 2 * 2 * 0.75 * p.E_SMRATE);
+  assert.equal(t.E_LODG, 138 * t.E_LRATE); assert.ok(t.E_MIE > 100 * t.E_MRATE);
+});
+test('CS12 amendment note shown; PCS with no travel days → red', () => {
+  const { e, est } = runCase('X_ADT200_amend_rem140');
+  assert.match(String(e.get('B16', 'RFO Form')), /AMENDED: 140 days remain/); assert.equal(est.E_TDYD, 60); assert.equal(est.E_PCSD, 140);
+  assert.equal(costRed(runCase('X_ADOS181_no_travel_days').e, 'E_R_TRAV'), true);
+});
+test('CS12 day limits: AT 29 ok, AT 30/31 blocked; 365 ok, 366 blocked (red + NOT READY)', () => {
+  const dayMsg = (n) => view(runCase(n).e).msgs.filter((m) => m.includes('NUMBER OF DAYS:'));
+  assert.equal(dayMsg('B_AT29').length, 0); assert.equal(dayMsg('B_ADT365').length, 0); assert.equal(dayMsg('B_ADOS365').length, 0);
+  for (const n of ['B_AT30', 'B_AT31']) { const { e } = runCase(n); assert.ok(has(view(e), "Annual Training can't exceed 29 days"), n); assert.ok(isRed(e, cellmap.CELL.DAYS), n); assert.match(view(e).status, /NOT READY/); }
+  const { e } = runCase('B_ADOS366'); assert.ok(has(view(e), 'max 365 days per fiscal year')); assert.ok(isRed(e, cellmap.CELL.DAYS));
+  assert.equal(runCase('B_AT29').e.listOptions('LIST_NDAYS_OK').length, 29); assert.equal(runCase('B_ADT365').e.listOptions('LIST_NDAYS_OK').length, 365);
 });

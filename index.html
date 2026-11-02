@@ -21,7 +21,6 @@
     </div>
     <nav class="tabs" role="tablist">
       <button role="tab" data-view="form" class="active">Form</button>
-      <button role="tab" data-view="cost">Cost estimate</button>
       <button role="tab" data-view="summary">1-page summary</button>
       <button role="tab" data-view="help">Help &amp; rules</button>
       <button role="tab" data-view="feedback">Feedback</button>
@@ -43,15 +42,11 @@
       <div class="layout">
         <div class="formcol"><div id="formGrid" class="sheet form-sheet"></div>
           <p class="sheet-note">Signature / approval block prints with the form. Use <b>Print / PDF</b> for the full form, or the 1-page summary tab.</p>
+          <div id="costLoading" class="loading no-print">Loading rate tables for the cost estimate…</div>
+          <details class="sources no-print"><summary>Cost estimate: rate sources &amp; effective dates (ESTIMATE ONLY — finance / DFAS / JTR determines actual entitlements)</summary><div id="sourcesTable"></div></details>
         </div>
         <aside class="sidecol" id="sidecol"><button id="drawerClose" class="drawer-close no-print" aria-label="Close status panel">✕ Close</button><div id="statusGrid" class="sheet status-sheet"></div></aside>
       </div>
-    </section>
-    <section id="view-cost" class="view" aria-label="Cost estimate">
-      <div class="banner warn">ESTIMATE ONLY — not an official entitlement determination. Finance (DFAS / JTR) determines actual entitlements.</div>
-      <div id="costLoading" class="loading">Loading rate tables…</div>
-      <div id="costGrid" class="sheet cost-sheet"></div>
-      <details class="sources"><summary>Rate sources &amp; effective dates</summary><div id="sourcesTable"></div></details>
     </section>
     <section id="view-summary" class="view" aria-label="One-page summary">
       <div class="summary-tools no-print"><button id="btnPrintSummary">🖨 Print / save 1-page PDF</button><span class="hint">Prints on one portrait page.</span></div>
@@ -60,7 +55,7 @@
     <section id="view-help" class="view" aria-label="Help"><div id="helpBody" class="prose"></div></section>
     <section id="view-feedback" class="view" aria-label="Feedback"><div id="feedbackBody" class="prose"></div></section>
   </main>
-  <footer class="no-print">Unofficial planning aid built from the MIRC RFO workbook (change set 11). Runs entirely in your browser — no server, no tracking. Verify everything against official guidance.</footer>
+  <footer class="no-print">Unofficial planning aid built from the MIRC RFO workbook (change set 12). Runs entirely in your browser — no server, no tracking. Verify everything against official guidance.</footer>
   <div id="toast" role="status" aria-live="polite"></div>
 </div>
 <script type="module" src="/src/main.js"></script>

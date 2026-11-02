@@ -6,6 +6,8 @@ import { spawn, execFileSync } from 'child_process';
 import fs from 'fs';
 const PORT = 4179, LIVE = process.env.E2E_URL, BASE = LIVE || `http://127.0.0.1:${PORT}/mirc-rfo/`;
 const SHOTS = new URL('../screenshots/', import.meta.url).pathname; fs.mkdirSync(SHOTS, { recursive: true });
+const CM = JSON.parse(fs.readFileSync(new URL('./fixtures/cellmap.json', import.meta.url)));
+const CODES = CM.CELL.CODES, SHIFT = 22;   // CS12: SOLDIER DATA / estimate block pushed the pre-CS12 rows 7+ down 22 rows
 const FX = (n) => JSON.parse(fs.readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url))).inputs;
 const results = []; let failures = 0;
 async function check(name, fn) {
@@ -22,7 +24,7 @@ const browser = await chromium.launch();
 async function fillCell(page, key, val) {
   const sel = `[data-key="${key}"]`;
   const h = await page.$(sel); if (!h || val === null) return 'skip';
-  const want = +key.replace(/^.*![A-Z]+/, '') >= 150 ? 'cost' : 'form';
+  const want = 'form';
   if (await page.evaluate(() => window.__rfo.view) !== want) { await page.click(`.tabs button[data-view=${want}]`); await page.waitForTimeout(150); }
   const tag = await h.evaluate((n) => n.tagName + ':' + (n.type || ''));
   if (val === null) return 'skip';
@@ -66,7 +68,7 @@ let jf;
 await check('Johnson example via real controls → READY TO SUBMIT, 11 codes', async () => {
   jf = await fillCase(page, FX('T1c_AT_full_READY_johnson'));
   const st = await status(page); ok(st.includes('READY TO SUBMIT'), st);
-  const codes = await page.textContent('[data-addr="C123"]'); ok(codes.trim() === '12, 17, 21, 34, 47, 229, 247, 252, 253, 259, 260', codes);
+  const codes = await page.textContent(`[data-addr="${CODES}"]`); ok(codes.trim() === '12, 17, 21, 34, 47, 229, 247, 252, 253, 259, 260', codes);
 });
 await check('status panel 11/11, 0 blanks / 0 conflicts', async () => {
   const t = await page.textContent('#statusGrid'); ok(/11\/11/.test(t), 'meter');
@@ -124,12 +126,12 @@ await (await page.$('#statusGrid')).screenshot({ path: SHOTS + 'desktop_status_c
 await check('conflicting code hidden from the pick list (196 picked → 244 not offered)', async () => {
   await clearForm(page); await fillCase(page, FX('T3b_lists_hide'));
   const all = await page.$$eval('select.ctl', (s) => s.map((x) => [x.dataset.key, [...x.options].map((o) => o.textContent)]));
-  const pm2 = all.find(([k]) => k === 'RFO Form!C99') || all.find(([, o]) => o.some((t) => t.startsWith('240 –')));
+  const pm2 = all.find(([k]) => k === 'RFO Form!C' + (99 + SHIFT)) || all.find(([, o]) => o.some((t) => t.startsWith('240 –')));
   ok(pm2 && !pm2[1].some((t) => t.startsWith('244 –')), 'still offered');
 });
 await check('mileage YES adds only 272', async () => {
   await clearForm(page); await fillCase(page, FX('X1_mileage_yes_only_272'));
-  ok((await page.textContent('[data-addr="C123"]')).trim() === '272');
+  ok((await page.textContent(`[data-addr="${CODES}"]`)).trim() === '272');
 });
 await check('removed codes 282/195/131/295 never offered in any list', async () => {
   const txt = (await page.$$eval('select.ctl option, datalist option', (o) => o.map((x) => x.textContent || x.value))).join('\n');
@@ -138,21 +140,49 @@ await check('removed codes 282/195/131/295 never offered in any list', async () 
 // cost
 for (const [n, tot] of [['E1_sample1_E5_bragg_15d', '$5,944.54'], ['E2_sample2_O3_huachuca_30d', '$15,177.16']]) {
   await check(`cost estimate ${n} via UI = ${tot}`, async () => {
-    await clearForm(page); await page.click('.tabs button[data-view=cost]'); await page.waitForFunction(() => window.__rfo.rates.loaded);
+    await clearForm(page); await page.evaluate(() => window.__rfoApi.ensureRates()); await page.waitForFunction(() => window.__rfo.rates.loaded);
     await fillCase(page, FX(n)); await page.waitForTimeout(200);
     ok((await page.textContent('#costChip')).includes(tot), await page.textContent('#costChip'));
-    ok((await page.textContent('#costGrid')).includes(tot), 'not in grid');
-    const g = await page.textContent('#costGrid'); ok(g.includes('ESTIMATE ONLY') && g.includes('RATES AS OF'), 'no estimate-only / sources');
+    ok((await page.textContent('[data-addr="J26"]')).includes(tot), 'total not on the form (SOLDIER DATA block)');
+    ok((await page.textContent('[data-addr="C15"]')).startsWith('TDY'), 'order type not TDY');
+    const g = await page.textContent('#formGrid'); ok(g.includes('ESTIMATE ONLY') && g.includes('RATES AS OF'), 'no estimate-only / sources');
+    ok(!(await page.$('.tabs button[data-view=cost]')), 'separate cost tab still there');
   });
-  if (n.startsWith('E1')) { await page.screenshot({ path: SHOTS + 'desktop_cost_E5_bragg.png', fullPage: true }); }
+  if (n.startsWith('E1')) { await (await page.$('#formGrid')).screenshot({ path: SHOTS + 'desktop_form_with_estimate_E5_bragg.png' }); }
 }
+// change set 12: tour-length rules + day limits through the UI
+for (const [n, ot, bah] of [['B_ADT140', 'PCS', 'PDS rate'], ['B_ADT139', 'TDY', 'HOR rate'], ['B_ADOS181', 'PCS', 'PDS rate'], ['B_ADOS180', 'TDY', 'HOR rate'], ['B_AT29', 'TDY', 'BAH-RC']]) {
+  await check(`order type ${n} via UI → ${ot} · ${bah}`, async () => {
+    await clearForm(page); await fillCase(page, FX(n)); await page.waitForTimeout(150);
+    ok((await page.textContent('[data-addr="C15"]')).startsWith(ot), await page.textContent('[data-addr="C15"]'));
+    ok((await page.textContent('[data-addr="H15"]')).includes(bah), await page.textContent('[data-addr="H15"]'));
+  });
+  if (n === 'B_ADT140') { await page.evaluate(() => { document.getElementById('toast').classList.remove('show'); window.scrollTo(0, 0); }); await (await page.$('#formGrid')).screenshot({ path: SHOTS + 'desktop_form_PCS_ADT140.png' }); }
+}
+await check('AT: days list stops at 29; 30 days (typed via API) → red + "can\'t exceed 29 days", NOT READY', async () => {
+  await clearForm(page); await fillCase(page, FX('B_AT29'));
+  const days = 'RFO Form!' + CM.CELL.DAYS;
+  const opts = await page.$eval(`[data-key="${days}"]`, (n) => [...n.options].map((o) => o.textContent).filter(Boolean));
+  ok(opts.length === 29 && opts[28] === '29', 'AT list ' + opts.length);
+  await page.evaluate((k) => window.__rfoApi.set({ [k]: 30 }), days); await page.waitForTimeout(150);
+  const t = await page.textContent('#statusGrid'); ok(t.includes("Annual Training can't exceed 29 days"), 'no AT msg');
+  ok(await page.$eval(`[data-addr="${CM.CELL.DAYS}"]`, (n) => n.classList.contains('is-red')), 'days not red'); ok((await status(page)).includes('NOT READY'));
+});
+await check('ADOS-RC: days list goes to 365; 366 → "max 365 days per fiscal year"', async () => {
+  await clearForm(page); await fillCase(page, FX('B_ADOS365'));
+  const days = 'RFO Form!' + CM.CELL.DAYS;
+  const n = await page.$eval(`[data-key="${days}"]`, (x) => [...x.options].filter((o) => o.textContent).length); ok(n === 365, 'list ' + n);
+  await page.evaluate((k) => window.__rfoApi.set({ [k]: 366 }), days); await page.waitForTimeout(150);
+  ok((await page.textContent('#statusGrid')).includes('max 365 days per fiscal year'), 'no 365 msg');
+});
 await check('cost shows on summary with same total', async () => {
+  await page.click('.tabs button[data-view=form]'); await clearForm(page); await fillCase(page, FX('E2_sample2_O3_huachuca_30d')); await page.waitForTimeout(200);
   await page.click('.tabs button[data-view=summary]'); await page.waitForTimeout(200);
   ok((await page.textContent('#summaryGrid')).includes('$15,177.16'));
 });
 // summary + prints
-await clearForm(page); await fillCase(page, { ...FX('Z1_summary_approvers'), 'RFO Form!E33': 'NO', 'RFO Form!E34': 'NO' });
-await page.evaluate(() => window.__rfoApi.set({ 'RFO Form!C160': 'Over 6', 'RFO Form!C161': 'YES', 'RFO Form!C162': '28310' }));
+await clearForm(page); await fillCase(page, { ...FX('Z1_summary_approvers'), ['RFO Form!' + CM.QCELL.D1]: 'NO', ['RFO Form!' + CM.QCELL.D2]: 'NO' });
+await page.evaluate(() => window.__rfoApi.set({ 'RFO Form!H10': 'Over 6', 'RFO Form!H8': 'YES', 'RFO Form!H11': '28310' }));
 await page.click('.tabs button[data-view=summary]'); await page.waitForTimeout(300);
 await page.screenshot({ path: SHOTS + 'desktop_summary.png', fullPage: true });
 const pages = (f) => +/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [f]).toString())[1];
@@ -205,9 +235,10 @@ await check('phone: status chip opens the status drawer', async () => {
 await ph.evaluate(() => document.getElementById('toast').classList.remove('show'));
 await ph.screenshot({ path: SHOTS + 'phone_status.png' });
 await check('phone: drawer Close button closes it', async () => { await ph.click('#drawerClose'); ok(!(await ph.evaluate(() => document.body.classList.contains('drawer-open')))); }); await clearForm(ph);
-await ph.click('.tabs button[data-view=cost]'); await ph.waitForFunction(() => window.__rfo.rates.loaded);
+await ph.evaluate(() => window.__rfoApi.ensureRates()); await ph.waitForFunction(() => window.__rfo.rates.loaded);
 await fillCase(ph, FX('E1_sample1_E5_bragg_15d'));
 await check('phone: cost estimate $5,944.54', async () => ok((await ph.textContent('#costChip')).includes('$5,944.54')));
+await ph.evaluate(() => { document.activeElement?.blur(); document.querySelector('[data-addr="C15"]').scrollIntoView({ block: 'start' }); }); await ph.waitForTimeout(200);
 await ph.screenshot({ path: SHOTS + 'phone_cost.png' });
 await ph.screenshot({ path: SHOTS + 'phone_cost_full.png', fullPage: true });
 await ph.click('.tabs button[data-view=summary]'); await ph.waitForTimeout(300);

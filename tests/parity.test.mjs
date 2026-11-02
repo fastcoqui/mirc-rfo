@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { caseNames, runCase, costRed } from './helpers.mjs';
 import { norm } from '../tools/parity.mjs';
-const SKIP = new Set(['E_BZROW', 'E_DZROW', 'E_PDROW']);   // spreadsheet row numbers (implementation detail)
+const SKIP = new Set(['E_BZROW', 'E_HZROW', 'E_DZROW', 'E_PDROW', 'E_STDROW']);   // spreadsheet row numbers (implementation detail)
 const same = (a, b) => a === b || (typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) < 1e-6) || (typeof b === 'boolean' && a === +b);
 
 for (const n of caseNames) {

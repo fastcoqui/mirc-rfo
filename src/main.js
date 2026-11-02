@@ -23,9 +23,8 @@ async function boot() {
     for (const [a, c] of Object.entries(ui[sheet].cells)) if (c.input) { const k = `${sheet}!${a}`; S.defaults[k] = c.v ?? null; }
   }
   buildCfMap(eng.cf);
-  renderSheet($('#formGrid'), 'RFO Form', 'B', 'K', [[2, 135]]);
+  renderSheet($('#formGrid'), 'RFO Form', 'B', 'K', [[2, formLastRow(ui)]]);   // CS12: the order type + cost estimate live in the SOLDIER DATA block (rows 7-28)
   renderSheet($('#statusGrid'), 'RFO Form', 'M', 'S', [[2, 50]]);
-  renderSheet($('#costGrid'), 'RFO Form', 'B', 'K', [[155, 171]]);
   renderSheet($('#summaryGrid'), 'RFO Summary', 'B', 'I', [[2, 76]]);
   renderHelp(); renderFeedback(); renderSources();
   // restore a draft if the user opted in on this device
@@ -39,6 +38,8 @@ async function boot() {
 }
 
 // ------------------------------------------------------------------ sheet rendering
+// last form row = print area end - 1 (the workbook's print area stops one row under the approvals block)
+function formLastRow(ui) { const m = /:\$?[A-Z]+\$?(\d+)/.exec(ui['RFO Form'].printArea || ''); return m ? +m[1] - 1 : 157; }
 const PX = (w) => Math.round((w || 8.43) * 7 + 5);
 function renderSheet(host, sheet, c0, c1, ranges) {
   const ui = S.ui[sheet];
@@ -105,8 +106,6 @@ function followLink(link) {
   const m = /^#?'?([^'!]+)'?!\$?([A-Z]+)\$?(\d+)/.exec(link || '');
   if (!m) return;
   if (m[1] === 'RFO Summary') return go('summary');
-  const r = +m[3];
-  if (r >= 150) return go('cost');
   go('form');
   const target = S.cells[`RFO Form!${m[2]}${m[3]}`]?.[0]?.el; if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -200,7 +199,7 @@ function updateCost() {
   const today = Math.floor(S.engine.calc('=TODAY()'));
   const inp = gatherInputs(S.engine, today);
   const wantsEstimate = inp.SEL_RANK && typeof inp.X_START === 'number' && typeof inp.SEL_DAYS === 'number';
-  if (!S.rates.loaded) { if (wantsEstimate || S.view === 'cost' || S.view === 'summary') ensureRates(); S.engine.setCost({}); S.cost = {}; return; }
+  if (!S.rates.loaded) { if (wantsEstimate || S.view === 'summary') ensureRates(); S.engine.setCost({}); S.cost = {}; return; }
   S.cost = computeCost(S.rates, inp);
   S.engine.setCost(S.cost);
 }
@@ -236,7 +235,7 @@ function refresh() {
   $('#statusToggle').classList.toggle('ok', st.includes('READY TO SUBMIT'));
   $('#statusToggle').classList.toggle('bad', st.includes('NOT READY'));
   $('#costChip').textContent = S.cost.E_ON ? 'Est. cost ' + formatValue(S.cost.E_TOTAL, '"$"#,##0.00') : '';
-  $('#costChip').onclick = () => go('cost');
+  $('#costChip').onclick = () => followLink("#'RFO Form'!C15");
 }
 function syncControl(rec, v) {
   const ctl = rec.ctl; rec.current = v === '' ? null : v;
@@ -276,10 +275,11 @@ function syncControl(rec, v) {
 function go(view) { location.hash = '#' + view; }
 function route() {
   const v = (location.hash || '#form').slice(1); const prevView = S.view;
-  S.view = ['form', 'cost', 'summary', 'help', 'feedback'].includes(v) ? v : 'form';
+  S.view = ['form', 'summary', 'help', 'feedback'].includes(v) ? v : 'form';   // (CS12: no separate cost tab - #cost opens the form)
   document.querySelectorAll('.view').forEach((s) => s.classList.toggle('active', s.id === 'view-' + S.view));
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === S.view));
-  if (S.view === 'cost' || S.view === 'summary') { ensureRates(); refresh(); }
+  if (v === 'cost') setTimeout(() => followLink("#'RFO Form'!C15"), 0);
+  if (S.view === 'summary') { ensureRates(); refresh(); }
   if (S.view === 'summary') fitSummary();
   if (prevView !== S.view) { document.body.classList.remove('drawer-open'); window.scrollTo(0, 0); }
 }
@@ -296,9 +296,9 @@ function wireChrome() {
     resetInputs(); localStorage.removeItem(DRAFT_KEY); $('#draftToggle').checked = false; refresh(); toast('Form cleared (draft on this device deleted).');
   });
   $('#draftToggle').addEventListener('change', (e) => { if (e.target.checked) { saveDraft(); toast('Draft will be kept in this browser on this device.'); } else { localStorage.removeItem(DRAFT_KEY); toast('Draft deleted from this device.'); } });
-  $('#btnPrint').addEventListener('click', () => doPrint(S.view === 'summary' ? 'summary' : S.view === 'cost' ? 'cost' : 'form'));
+  $('#btnPrint').addEventListener('click', () => doPrint(S.view === 'summary' ? 'summary' : 'form'));
   $('#btnPrintSummary').addEventListener('click', () => doPrint('summary'));
-  window.addEventListener('beforeprint', () => { if (!document.body.dataset.print) document.body.dataset.print = S.view === 'summary' ? 'summary' : S.view === 'cost' ? 'cost' : 'form'; preparePrint(); });
+  window.addEventListener('beforeprint', () => { if (!document.body.dataset.print) document.body.dataset.print = S.view === 'summary' ? 'summary' : 'form'; preparePrint(); });
   window.addEventListener('afterprint', () => { delete document.body.dataset.print; fitSummary(); });
 }
 function preparePrint() {
@@ -367,7 +367,7 @@ function renderHelp() {
   h += '</tr></thead><tbody>';
   for (const r of R.slice(hi + 1)) { if (!r.slice(1, 6).some(Boolean)) continue; h += '<tr>' + r.slice(1, 6).map((x) => `<td>${esc(x)}</td>`).join('') + '</tr>'; }
   h += '</tbody></table></div>';
-  h += `<h2>About this app</h2><ul><li>Built from <code>${esc(S.engine.data.source)}</code> (change set 11, md5 <code>${esc(S.engine.data.md5.slice(0, 12))}</code>) by a repeatable extraction script; the workbook's own formulas run in the browser through a spreadsheet engine (HyperFormula, GPL-3.0).</li><li>Saved files (💾) are plain JSON on your computer. "Keep a draft" uses this browser's local storage only; <b>Clear form</b> wipes it.</li><li>Cost estimates use the official rate tables listed on the Cost estimate tab. They are estimates, not entitlement determinations.</li></ul>`;
+  h += `<h2>About this app</h2><ul><li>Built from <code>${esc(S.engine.data.source)}</code> (change set 12, md5 <code>${esc(S.engine.data.md5.slice(0, 12))}</code>) by a repeatable extraction script; the workbook's own formulas run in the browser through a spreadsheet engine (HyperFormula, GPL-3.0).</li><li>Saved files (💾) are plain JSON on your computer. "Keep a draft" uses this browser's local storage only; <b>Clear form</b> wipes it.</li><li>The order type (PCS / TDY, AR 37-104-4 Fig 8-19) and cost estimate sit in the SOLDIER DATA block at the top of the form and use the official rate tables listed under the form. They are estimates, not entitlement determinations.</li></ul>`;
   $('#helpBody').innerHTML = h;
 }
 function renderSources() {

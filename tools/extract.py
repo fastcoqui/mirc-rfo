@@ -67,6 +67,8 @@ for n, d in wb.defined_names.items():
     if 'Admin Dashboard' in t or 'Feedback Log' in t: continue
     engine['names'][n] = t
 engine['costNames'].sort(key=lambda n: rates_calc[n])
+_ml = re.search(r"'RFO Form'!\$?([A-Z]+)\$?(\d+)", str(rs[f"B{rates_calc['E_MLOC']}"].value or '')) if 'E_MLOC' in rates_calc else None
+engine['costRefs'] = dict(VAR=f"RFO Form!{_ml.group(1)}{_ml.group(2)}") if _ml else {}
 
 # ---------- UI layout (form + summary)
 def font_d(f):

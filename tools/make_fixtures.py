@@ -4,7 +4,7 @@
 write the inputs (cells that differ from the shipped workbook) and the expected value of every formula cell."""
 import os, sys, json, glob, datetime
 import openpyxl
-T = '/workspace/mirc_rfo/tests'; MAIN = '/workspace/mirc_rfo/MIRC_RFO_Interactive.xlsx'
+T = os.environ.get('RFO_TESTS', '/workspace/mirc_rfo/tests'); MAIN = '/workspace/mirc_rfo/MIRC_RFO_Interactive.xlsx'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'tests', 'fixtures')
 SHEETS = ['RFO Form', 'RFO Summary', 'Lists', 'AI_Engine']
 EPOCH = datetime.datetime(1899, 12, 30)

@@ -155,12 +155,13 @@ for sn in UI_SHEETS:
         for c in row:
             v = cell_value(c); locked = c.protection.locked
             fill = rgb(c.fill.fgColor) if c.fill and c.fill.fill_type == 'solid' else None
-            if v is None and locked and not fill: continue
+            if v is None and locked and not fill and not c.comment: continue
             b = c.border
             cells[c.coordinate] = dict(v=v if not (isinstance(v, str) and v.startswith('=')) else None, f=isinstance(v, str) and v.startswith('='),
                                        fill=fill, font=font_d(c.font), al=dict(h=c.alignment.horizontal, v=c.alignment.vertical, wrap=bool(c.alignment.wrap_text)),
                                        fmt=c.number_format if c.number_format != 'General' else None, input=(locked is False),
                                        bd=''.join(k for k, s in (('t', b.top), ('r', b.right), ('b', b.bottom), ('l', b.left)) if s and s.style))
+            if c.comment: cells[c.coordinate]['note'] = c.comment.text.strip()
             if c.hyperlink: cells[c.coordinate]['link'] = c.hyperlink.location or c.hyperlink.target
     dv = dvs(ws)
     for a, d in dv.items():

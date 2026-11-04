@@ -141,3 +141,11 @@ body.drawer-open .drawer-close { display: block; margin: 0 0 8px auto; font: inh
   .cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .form-sheet .cell { break-inside: avoid; }
 }
+
+/* change set 13: simplified form */
+.cell.cf-hidden { display: none !important; }
+.cell.has-note { text-decoration: underline dotted rgba(0,0,0,.35); text-underline-offset: 3px; cursor: help; }
+.cell.input.has-note { text-decoration: none; }
+.form-sheet { grid-auto-rows: auto; }                       /* rows whose cells are all hidden collapse */
+.form-sheet .cell { min-height: 26px; }
+.form-sheet .cell.blank { min-height: 0; padding-top: 0; padding-bottom: 0; }

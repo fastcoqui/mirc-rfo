@@ -28,6 +28,8 @@ async function fillCell(page, key, val) {
   if (await page.evaluate(() => window.__rfo.view) !== want) { await page.click(`.tabs button[data-view=${want}]`); await page.waitForTimeout(150); }
   const tag = await h.evaluate((n) => n.tagName + ':' + (n.type || ''));
   if (val === null) return 'skip';
+  // CS13: inputs that aren't relevant yet (MORE OPTIONS = HIDE, PCS-only) are hidden - a user would see them once relevant
+  if (await h.evaluate((n) => !!n.closest('.cf-hidden'))) { await page.evaluate(([k, v]) => window.__rfoApi.set({ [k]: v }), [key, val]); return 'api'; }
   if (tag.startsWith('SELECT')) {
     const label = String(val);
     const labels = await h.evaluate((n) => [...n.options].map((o) => o.textContent));
@@ -143,19 +145,35 @@ for (const [n, tot] of [['E1_sample1_E5_bragg_15d', '$5,944.54'], ['E2_sample2_O
     await clearForm(page); await page.evaluate(() => window.__rfoApi.ensureRates()); await page.waitForFunction(() => window.__rfo.rates.loaded);
     await fillCase(page, FX(n)); await page.waitForTimeout(200);
     ok((await page.textContent('#costChip')).includes(tot), await page.textContent('#costChip'));
-    ok((await page.textContent('[data-addr="J26"]')).includes(tot), 'total not on the form (SOLDIER DATA block)');
-    ok((await page.textContent('[data-addr="C15"]')).startsWith('TDY'), 'order type not TDY');
+    ok((await page.textContent('[data-addr="J17"]')).includes(tot), 'total not on the form (SOLDIER DATA block)');
+    ok((await page.textContent('[data-addr="C17"]')).startsWith('TDY'), 'order type not TDY');
     const g = await page.textContent('#formGrid'); ok(g.includes('ESTIMATE ONLY') && g.includes('RATES AS OF'), 'no estimate-only / sources');
     ok(!(await page.$('.tabs button[data-view=cost]')), 'separate cost tab still there');
   });
   if (n.startsWith('E1')) { await (await page.$('#formGrid')).screenshot({ path: SHOTS + 'desktop_form_with_estimate_E5_bragg.png' }); }
 }
+// change set 13: simplified form - MORE OPTIONS toggle + relevant-only inputs + tooltips
+await check('CS13 MORE OPTIONS: advanced inputs hidden until SHOW; PCS TRAVEL DAYS only on a PCS; help moved to tooltips', async () => {
+  await clearForm(page); await fillCase(page, FX('E1_sample1_E5_bragg_15d')); await page.waitForTimeout(150);
+  const hid = (a) => page.$eval(`[data-addr="${a}"]`, (n) => n.classList.contains('cf-hidden') && getComputedStyle(n).display === 'none');
+  ok(['HIDE', ''].includes(await page.$eval('[data-key="RFO Form!C12"]', (n) => n.selectedOptions[0]?.textContent || '')), 'toggle default');
+  for (const a of ['C13', 'H13', 'C14', 'H14', 'C15', 'H15']) ok(await hid(a), a + ' visible while HIDE');
+  ok(await hid('C11'), 'travel days visible on a TDY');
+  await page.selectOption('[data-key="RFO Form!C12"]', { label: 'SHOW' }); await page.waitForTimeout(150);
+  for (const a of ['C13', 'H13', 'C14', 'H14', 'C15', 'H15']) ok(!(await hid(a)), a + ' still hidden after SHOW');
+  await page.selectOption('[data-key="RFO Form!C12"]', { label: 'HIDE' }); await page.waitForTimeout(100);
+  await clearForm(page); await fillCase(page, FX('B_ADT140')); await page.waitForTimeout(150);
+  ok(!(await hid('C11')), 'travel days hidden on a PCS');
+  ok((await page.$$('#formGrid .cell.has-note')).length >= 8, 'tooltips');
+  const lines = await page.$$eval('#formGrid [data-addr^="B1"], #formGrid [data-addr^="B2"]', (n) => n.map((x) => x.textContent.trim()));
+  for (const t of ['BAH', 'Pay, BAS & FICA', 'Per diem', 'POV mileage']) ok(lines.includes(t), 'box line ' + t);
+});
 // change set 12: tour-length rules + day limits through the UI
 for (const [n, ot, bah] of [['B_ADT140', 'PCS', 'PDS rate'], ['B_ADT139', 'TDY', 'HOR rate'], ['B_ADOS181', 'PCS', 'PDS rate'], ['B_ADOS180', 'TDY', 'HOR rate'], ['B_AT29', 'TDY', 'BAH-RC']]) {
   await check(`order type ${n} via UI → ${ot} · ${bah}`, async () => {
     await clearForm(page); await fillCase(page, FX(n)); await page.waitForTimeout(150);
-    ok((await page.textContent('[data-addr="C15"]')).startsWith(ot), await page.textContent('[data-addr="C15"]'));
-    ok((await page.textContent('[data-addr="H15"]')).includes(bah), await page.textContent('[data-addr="H15"]'));
+    ok((await page.textContent('[data-addr="C17"]')).startsWith(ot), await page.textContent('[data-addr="C17"]'));
+    ok((await page.textContent('[data-addr="C18"]')).includes(bah), await page.textContent('[data-addr="C18"]'));
   });
   if (n === 'B_ADT140') { await page.evaluate(() => { document.getElementById('toast').classList.remove('show'); window.scrollTo(0, 0); }); await (await page.$('#formGrid')).screenshot({ path: SHOTS + 'desktop_form_PCS_ADT140.png' }); }
 }
@@ -182,7 +200,7 @@ await check('cost shows on summary with same total', async () => {
 });
 // summary + prints
 await clearForm(page); await fillCase(page, { ...FX('Z1_summary_approvers'), ['RFO Form!' + CM.QCELL.D1]: 'NO', ['RFO Form!' + CM.QCELL.D2]: 'NO' });
-await page.evaluate(() => window.__rfoApi.set({ 'RFO Form!H10': 'Over 6', 'RFO Form!H8': 'YES', 'RFO Form!H11': '28310' }));
+await page.evaluate(() => window.__rfoApi.set({ 'RFO Form!C9': 'Over 6', 'RFO Form!H8': 'YES', 'RFO Form!C10': '28310' }));
 await page.click('.tabs button[data-view=summary]'); await page.waitForTimeout(300);
 await page.screenshot({ path: SHOTS + 'desktop_summary.png', fullPage: true });
 const pages = (f) => +/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [f]).toString())[1];
@@ -238,7 +256,7 @@ await check('phone: drawer Close button closes it', async () => { await ph.click
 await ph.evaluate(() => window.__rfoApi.ensureRates()); await ph.waitForFunction(() => window.__rfo.rates.loaded);
 await fillCase(ph, FX('E1_sample1_E5_bragg_15d'));
 await check('phone: cost estimate $5,944.54', async () => ok((await ph.textContent('#costChip')).includes('$5,944.54')));
-await ph.evaluate(() => { document.activeElement?.blur(); document.querySelector('[data-addr="C15"]').scrollIntoView({ block: 'start' }); }); await ph.waitForTimeout(200);
+await ph.evaluate(() => { document.activeElement?.blur(); document.querySelector('[data-addr="C17"]').scrollIntoView({ block: 'start' }); }); await ph.waitForTimeout(200);
 await ph.screenshot({ path: SHOTS + 'phone_cost.png' });
 await ph.screenshot({ path: SHOTS + 'phone_cost_full.png', fullPage: true });
 await ph.click('.tabs button[data-view=summary]'); await ph.waitForTimeout(300);

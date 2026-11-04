@@ -1,6 +1,6 @@
 # MIRC RFO Planner (unofficial planning aid)
 
-Static, fully client-side web version of the MIRC RFO interactive workbook (change set 12).
+Static, fully client-side web version of the MIRC RFO interactive workbook (change set 13).
 **Not an official Army / DoD system.** No backend, no sign-in, no analytics; the page makes no
 network requests except for its own files. Optional drafts go to this browser's `localStorage`
 and are deleted by **Clear form**.
@@ -29,10 +29,11 @@ mkdir -p /tmp/site && cp -r dist /tmp/site/mirc-rfo && python3 -m http.server 80
   duty types max 365 days per fiscal year.
 
 ## Tests
-* `npm test` - node:test (147 tests): 94 workbook scenarios x ~8,700 formula cells + every cost line vs
+* `npm test` - node:test (150 tests): 94 workbook scenarios x ~8,700 formula cells + every cost line vs
   LibreOffice-calculated workbook values, plus explicit rule tests (decision tree, removed
   codes, 16 approved conflicts + 196/244, READY logic, cost samples, CS12 PCS/TDY boundaries
-  29/30/31, 139/140, 180/181, waiver / commuting / multi-location / amendment, AT 29 + 365-day caps).
+  29/30/31, 139/140, 180/181, waiver / commuting / multi-location / amendment, AT 29 + 365-day caps,
+  CS13 compact estimate box, MORE OPTIONS toggle, tooltips).
 * `npm run build && npm run e2e` - headless Chromium against `dist/` on 127.0.0.1: real-control
   form filling, status, conflicts, cost, save/open, clear, drafts, feedback, print PDFs (summary =
   1 page), no external requests; writes `screenshots/`.

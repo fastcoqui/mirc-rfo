@@ -153,32 +153,28 @@ export function computeCost(rates, inp) {
   E.E_TOTAL = E.E_ON ? E.E_BASIC + E.E_BAH + E.E_BAS + E.E_FICA_ER + E.E_LODG + E.E_MIE + E.E_MILE : 0;
   E.E_ONOTE = onote(E, dt);
   E.E_FLAGS = flags(E);
-  E.E_ASOF = 'RATES AS OF / SOURCE:  Basic pay & BAS - DFAS, eff. 1 Jan ' + E.E_BPYR + '  ·  BAH - DTMO ' + E.E_RCYR + ' Non-Locality (BAH-RC/T) and ' + E.E_BHYR + ' locality (ZIP→MHA, HOR / PDS), eff. 1 Jan  ·  Per diem - GSA FY' + E.E_PDFY +
-    ' (eff. 1 Oct ' + (E.E_PDFY - 1) + ')  ·  FICA - SSA ' + E.E_FYR + ' (6.2% SS + 1.45% Medicare, basic pay only)  ·  POV - GSA/JTR ' + E.E_POVYR +
-    "  ·  PCS / TDY - AR 37-104-4 para 8-4, Fig 8-19.  URLs + update steps: hidden 'Rates' tab.  ESTIMATE ONLY - finance (DFAS / JTR) determines actual entitlements.";
+  E.E_ASOF = 'ESTIMATE ONLY - finance (DFAS / JTR) determines entitlements.  RATES AS OF / SOURCE: DFAS pay & BAS ' + E.E_BPYR + ' · DTMO BAH ' + E.E_BHYR + ' (RC/T ' + E.E_RCYR + ') · GSA per diem FY' + E.E_PDFY +
+    ' · SSA FICA ' + E.E_FYR + ' · GSA POV ' + E.E_POVYR + " · PCS/TDY: AR 37-104-4 Fig 8-19. Sources: hidden 'Rates' tab.";   // change set 13 (shorter)
   return E;
 }
 function round2(x) { const s = Math.sign(x); return s * Math.round(Math.abs(x) * 100 + 1e-9) / 100; }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const ddmmm = (v) => { const p = serialToParts(v); return String(p.d).padStart(2, '0') + '-' + MON[p.m] + '-' + p.y; };
-function onote(E, dt) {
-  if (!E.E_ON) return 'Order type + estimate start when RANK, START DATE and NUMBER OF DAYS are filled. Rule (AR 37-104-4 para 8-4, Fig 8-19): AT/ADT/ADOS-RC 1-30 days = TDY, BAH-RC · ADT/ADTS 31-139 TDY, BAH (HOR) · 140+ PCS, BAH (PDS) · ADOS-RC 31-180 TDY, BAH (HOR) · 181+ PCS, BAH (PDS).';
-  let s = 'Rule (AR 37-104-4 para 8-4, Fig 8-19): ';
-  if (dt === '') s += '⚠ pick ① CREATE TEMP ASSIGNMENT to apply the AT / ADT / ADTS / ADOS-RC tour-length rule' + (E.E_DAYS > 30 ? ' - treated as TDY until then' : '');
-  else if (dt === 'AT') s += 'AT (max 29 days) = TDY, BAH-RC';
-  else if (E.E_PCSMIN === 140) s += dt + ': 1-30 d TDY, BAH-RC · 31-139 d TDY, BAH (HOR) · 140+ d PCS, BAH (PDS)';
-  else s += 'ADOS-RC: 1-30 d TDY, BAH-RC · 31-180 d TDY, BAH (HOR) · 181+ d PCS, BAH (PDS)';
-  if (E.E_SPLIT) s += '  ·  ⚠ AMENDED: ' + E.E_REM + ' days remain from ' + ddmmm(E.E_AMD) + ' (≥ ' + E.E_PCSMIN + ') - PCS as of the amendment date; BAH at the PDS rate from then (Note ' + (E.E_PCSMIN === 140 ? 1 : 2) + ').';
-  if (num(E.E_AMD) && !E.E_PCS && E.E_PCSMIN > 0) s += '  ·  Amended: ' + E.E_REM + ' days remain from the amendment date (< ' + E.E_PCSMIN + ') - stays TDY.';
-  if (E.E_PCS && E.E_COMM) s += '  ·  Duty within commuting distance → BAH at the HOR rate (Note 5).';
-  if (E.E_PCS && E.E_MLOC) s += '  ·  Variation Authorized (more than one location): assumes each location is under ' + E.E_PCSMIN + ' days → BAH at the HOR rate (Notes 3, 5).';
-  if (E.E_PCS && E.E_WAIVOK) s += '  ·  DA G1 waiver (with dependents) → BAH at the HOR rate (Note 4).';
-  if (E.E_PCS && up(E.E_DEPS) === 'YES' && !E.E_HOREX) s += '  ·  With dependents the Soldier can request a DA G1 waiver for HOR-rate BAH (HOR BAH WAIVER = YES).';
-  if (E.E_PCS) s += '  ·  PCS: no per diem at the duty location - only the travel days to report and back to HOR.';
-  return s;
+function onote(E, dt) {                       // change set 13: one short line (TRIM like the workbook)
+  if (!E.E_ON) return '';
+  let s = '';
+  if (dt === '') s += '⚠ Pick ① assignment type to apply the PCS / TDY rule. ';
+  if (E.E_SPLIT) s += '⚠ AMENDED: ' + E.E_REM + ' days remain from ' + ddmmm(E.E_AMD) + ' → PCS from that date, PDS BAH (Note ' + (E.E_PCSMIN === 140 ? 1 : 2) + '). ';
+  if (num(E.E_AMD) && !E.E_PCS && E.E_PCSMIN > 0) s += 'Amended: ' + E.E_REM + ' days left (< ' + E.E_PCSMIN + ') → stays TDY. ';
+  if (E.E_PCS && E.E_COMM) s += 'Commuting distance → HOR BAH (Note 5). ';
+  if (E.E_PCS && E.E_MLOC) s += 'Several locations (Variation Authorized) → HOR BAH (Notes 3, 5). ';
+  if (E.E_PCS && E.E_WAIVOK) s += 'DA G1 waiver → HOR BAH (Note 4). ';
+  if (E.E_PCS && up(E.E_DEPS) === 'YES' && !E.E_HOREX) s += 'With dependents a DA G1 waiver can keep HOR BAH. ';
+  if (E.E_PCS) s += 'PCS: no per diem except travel days.';
+  return s.trim().replace(/ {2,}/g, ' ');
 }
 function flags(E) {
-  if (!E.E_ON) return 'Fill RANK, START DATE and NUMBER OF DAYS on the form to start the estimate.';
+  if (!E.E_ON) return '';
   let s = '';
   if (E.E_GRADE === '') s += '⚠ No pay grade for this rank. ';
   s += !num(E.E_YOSIX) ? '⚠ Enter PEBD or pick YEARS OF SERVICE. ' : (E.E_GRADE !== '' && !num(E.E_BPMO) ? '⚠ DFAS has no ' + E.E_GRADE + ' rate at ' + E.E_YOSLBL + '. ' : '');
@@ -193,11 +189,8 @@ function flags(E) {
   if (E.E_PCS && E.E_PDON && E.E_TRAV === 0) s += '⚠ Enter PCS TRAVEL DAYS for the travel per diem. ';
   if ((E.E_PDOK || E.E_TRVON) && E.E_PDFY !== E.E_FYEAR) s += '⚠ FY' + E.E_FYEAR + ' per diem not loaded - FY' + E.E_PDFY + ' used. ';
   if (E.E_PDOK && E.E_MULTI) s += '⚠ ZIP spans more than one GSA per diem area - the higher rate is used; check gsa.gov. ';
-  if (E.E_PDOK && E.E_TDYD > 30) s += 'TDY over 30 days: JTR long-term TDY (flat-rate) per diem may apply - full rate shown. ';
-  if (E.E_PDOK) s += "Lodging rate = start month; seasonal changes later in the order aren't applied. ";
-  if (E.E_TRVON) s += 'PCS travel days use the standard CONUS per diem rate. ';
   if (E.E_MILES > 0 && E.E_POVYR !== E.E_YR) s += '⚠ ' + E.E_YR + ' POV rate not published - ' + E.E_POVYR + ' used. ';
-  return s + 'OCONUS / COLA / special pays / PCS allowances (DLA, weight) not included.';
+  return s;
 }
 // what the cost engine reads from the form engine
 export const COST_INPUT_NAMES = ['SEL_RANK', 'X_START', 'X_END', 'SEL_DAYS', 'X_ROUTE_OUT', 'X_ROUTE_IN', 'X_DTYPE'];

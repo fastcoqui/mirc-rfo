@@ -2,7 +2,7 @@
 // conflicts, READY logic, cost samples). Values are computed by the web engine, not copied.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runCase, runInputs, fixture, view, isRed, has, ready, optionsFor, codeOf, dispOf, cellmap, data, costRed } from './helpers.mjs';
+import { runCase, runInputs, fixture, view, isRed, has, ready, optionsFor, codeOf, dispOf, cellmap, data, costRed, ui } from './helpers.mjs';
 const F = 'RFO Form!';
 const { e: E0 } = runCase('T0_blank');
 
@@ -128,7 +128,7 @@ for (const [n, ot, bt] of OT) {
   test(`CS12 ${n}: ${ot}, BAH ${bt} (form shows it)`, () => {
     const { e, est } = runCase(n);
     assert.equal(est.E_OTYPE, ot); assert.equal(est.E_BAHT, bt);
-    assert.ok(String(e.get('C15', 'RFO Form')).startsWith(ot.split(' ')[0]), String(e.get('C15', 'RFO Form')));
+    assert.ok(String(e.get('C17', 'RFO Form')).startsWith(ot.split(' ')[0]), String(e.get('C17', 'RFO Form')));
   });
 }
 test('CS12 PCS: no per diem at the duty location, only 2 travel days each way at the standard CONUS rate', () => {
@@ -139,7 +139,7 @@ test('CS12 PCS: no per diem at the duty location, only 2 travel days each way at
 });
 test('CS12 amendment note shown; PCS with no travel days → red', () => {
   const { e, est } = runCase('X_ADT200_amend_rem140');
-  assert.match(String(e.get('B16', 'RFO Form')), /AMENDED: 140 days remain/); assert.equal(est.E_TDYD, 60); assert.equal(est.E_PCSD, 140);
+  assert.match(String(e.get('B22', 'RFO Form')), /AMENDED: 140 days remain/); assert.equal(est.E_TDYD, 60); assert.equal(est.E_PCSD, 140);
   assert.equal(costRed(runCase('X_ADOS181_no_travel_days').e, 'E_R_TRAV'), true);
 });
 test('CS12 day limits: AT 29 ok, AT 30/31 blocked; 365 ok, 366 blocked (red + NOT READY)', () => {
@@ -148,4 +148,26 @@ test('CS12 day limits: AT 29 ok, AT 30/31 blocked; 365 ok, 366 blocked (red + NO
   for (const n of ['B_AT30', 'B_AT31']) { const { e } = runCase(n); assert.ok(has(view(e), "Annual Training can't exceed 29 days"), n); assert.ok(isRed(e, cellmap.CELL.DAYS), n); assert.match(view(e).status, /NOT READY/); }
   const { e } = runCase('B_ADOS366'); assert.ok(has(view(e), 'max 365 days per fiscal year')); assert.ok(isRed(e, cellmap.CELL.DAYS));
   assert.equal(runCase('B_AT29').e.listOptions('LIST_NDAYS_OK').length, 29); assert.equal(runCase('B_ADT365').e.listOptions('LIST_NDAYS_OK').length, 365);
+});
+
+// ---- change set 13: simplified form (compact estimate box, MORE OPTIONS toggle, tooltips) ----
+test('CS13 compact estimate box: 4 key lines add up to the total (all cost / boundary cases)', () => {
+  let n = 0;
+  for (const k of ['E1_sample1_E5_bragg_15d', 'E2_sample2_O3_huachuca_30d', 'E3_locality_pebd_govt_quarters_pov', 'B_ADT140', 'B_ADOS181', 'X_ADT200_amend_rem140', 'X_ADOS181_waiver_deps']) {
+    const { e } = runCase(k); const v = [18, 19, 20, 21].map((r) => Number(e.get('J' + r, 'RFO Form')) || 0);
+    assert.ok(Math.abs(v.reduce((a, b) => a + b, 0) - Number(e.get('J17', 'RFO Form'))) < 0.006, k); n++;
+  }
+  assert.equal(n, 7);
+});
+test('CS13 MORE OPTIONS toggle defaults to HIDE (SHOW / HIDE list) and drives the hide rules', () => {
+  const { e } = runCase('E1_sample1_E5_bragg_15d');
+  assert.equal(String(e.get('C12', 'RFO Form')).toUpperCase(), 'HIDE');
+  assert.deepEqual(ui['RFO Form'].dv.C12.options.map((x) => x.toUpperCase()).sort(), ['HIDE', 'SHOW']);
+  const hide = data.cf.filter((r) => r.fill && /FEFEFE/i.test(r.fill) && r.stop);
+  assert.ok(hide.some((r) => /E_MORE/.test(r.formula) && r.cells.includes('C13') && r.cells.includes('H15')));
+  assert.ok(hide.some((r) => /E_PCS/.test(r.formula) && r.cells.includes('C11')));
+});
+test('CS13 helper text lives in tooltips (cell comments), not on the sheet', () => {
+  const notes = Object.values(ui['RFO Form'].cells).filter((c) => c.note);
+  assert.ok(notes.length >= 8, String(notes.length));
 });

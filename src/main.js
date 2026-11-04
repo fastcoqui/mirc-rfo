@@ -70,6 +70,7 @@ function renderSheet(host, sheet, c0, c1, ranges) {
         el.style.gridColumn = `${c - ci0 + 1} / span ${cs}`;
         el.style.gridRow = `${gridRow} / span ${rs}`;
         styleBase(el, info);
+        if (info.note) { el.title = info.note; el.classList.add('has-note'); }
         const key = `${sheet}!${a}`;
         const rec = { el, info, sheet, addr: a, key };
         if (info.input) buildInput(rec, ui.dv[a], labelFor(ui, r, c, ci0));
@@ -216,7 +217,7 @@ function refresh() {
   for (const [key, recs] of Object.entries(S.cells)) {
     for (const rec of recs) {
       const v = rec.kind === 'c' ? null : E.get(rec.addr, rec.sheet);
-      if (rec.kind === 'f') { const t = formatValue(v, rec.info.fmt); if (rec.el.textContent !== t) rec.el.textContent = t; }
+      if (rec.kind === 'f') { const t = formatValue(v, rec.info.fmt); if (rec.el.textContent !== t) rec.el.textContent = t; rec.el.classList.toggle('blank', t === '' && !rec.info.fill); }
       else if (rec.kind === 'in') syncControl(rec, v);
       // conditional formatting
       const idx = S.cfMap[key]; let bg = null, color = null, bold = null;
@@ -225,6 +226,7 @@ function refresh() {
       rec.el.style.background = bg || b.bg; rec.el.style.color = color || b.color; rec.el.style.fontWeight = bold ? '700' : b.weight;
       const red = bg && /^#FFC7CE$/i.test(bg);
       rec.el.classList.toggle('is-red', !!red);
+      rec.el.classList.toggle('cf-hidden', !!(bg && /^#FEFEFE$/i.test(bg)));   // workbook sentinel: 'not relevant now' (MORE OPTIONS = HIDE, PCS-only inputs)
       rec.el.classList.toggle('is-muted', !!(bg && /^#EDEDED$/i.test(bg)) || !!(color && /^#A6A6A6$/i.test(color)));
       if (rec.ctl) { rec.ctl.style.background = bg || ''; rec.ctl.setAttribute('aria-invalid', red ? 'true' : 'false'); }
     }
@@ -235,7 +237,7 @@ function refresh() {
   $('#statusToggle').classList.toggle('ok', st.includes('READY TO SUBMIT'));
   $('#statusToggle').classList.toggle('bad', st.includes('NOT READY'));
   $('#costChip').textContent = S.cost.E_ON ? 'Est. cost ' + formatValue(S.cost.E_TOTAL, '"$"#,##0.00') : '';
-  $('#costChip').onclick = () => followLink("#'RFO Form'!C15");
+  $('#costChip').onclick = () => followLink("#'RFO Form'!C17");
 }
 function syncControl(rec, v) {
   const ctl = rec.ctl; rec.current = v === '' ? null : v;
@@ -278,7 +280,7 @@ function route() {
   S.view = ['form', 'summary', 'help', 'feedback'].includes(v) ? v : 'form';   // (CS12: no separate cost tab - #cost opens the form)
   document.querySelectorAll('.view').forEach((s) => s.classList.toggle('active', s.id === 'view-' + S.view));
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === S.view));
-  if (v === 'cost') setTimeout(() => followLink("#'RFO Form'!C15"), 0);
+  if (v === 'cost') setTimeout(() => followLink("#'RFO Form'!C17"), 0);
   if (S.view === 'summary') { ensureRates(); refresh(); }
   if (S.view === 'summary') fitSummary();
   if (prevView !== S.view) { document.body.classList.remove('drawer-open'); window.scrollTo(0, 0); }
@@ -367,7 +369,7 @@ function renderHelp() {
   h += '</tr></thead><tbody>';
   for (const r of R.slice(hi + 1)) { if (!r.slice(1, 6).some(Boolean)) continue; h += '<tr>' + r.slice(1, 6).map((x) => `<td>${esc(x)}</td>`).join('') + '</tr>'; }
   h += '</tbody></table></div>';
-  h += `<h2>About this app</h2><ul><li>Built from <code>${esc(S.engine.data.source)}</code> (change set 12, md5 <code>${esc(S.engine.data.md5.slice(0, 12))}</code>) by a repeatable extraction script; the workbook's own formulas run in the browser through a spreadsheet engine (HyperFormula, GPL-3.0).</li><li>Saved files (💾) are plain JSON on your computer. "Keep a draft" uses this browser's local storage only; <b>Clear form</b> wipes it.</li><li>The order type (PCS / TDY, AR 37-104-4 Fig 8-19) and cost estimate sit in the SOLDIER DATA block at the top of the form and use the official rate tables listed under the form. They are estimates, not entitlement determinations.</li></ul>`;
+  h += `<h2>About this app</h2><ul><li>Built from <code>${esc(S.engine.data.source)}</code> (change set 13, md5 <code>${esc(S.engine.data.md5.slice(0, 12))}</code>) by a repeatable extraction script; the workbook's own formulas run in the browser through a spreadsheet engine (HyperFormula, GPL-3.0).</li><li>Saved files (💾) are plain JSON on your computer. "Keep a draft" uses this browser's local storage only; <b>Clear form</b> wipes it.</li><li>The order type (PCS / TDY, AR 37-104-4 Fig 8-19) and cost estimate sit in a compact box in the SOLDIER DATA block at the top of the form (rarely-needed inputs open with MORE OPTIONS = SHOW; hover a label with a dotted underline for its help) and use the official rate tables listed under the form. They are estimates, not entitlement determinations.</li></ul>`;
   $('#helpBody').innerHTML = h;
 }
 function renderSources() {
